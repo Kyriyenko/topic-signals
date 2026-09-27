@@ -1,0 +1,12 @@
+/vendor/
+/var/cache/*
+!/var/cache/.gitkeep
+/var/charts/*
+!/var/charts/.gitkeep
+/var/reports/*
+!/var/reports/.gitkeep
+.env
+.env.*
+!.env.example
+.idea/
+.phpunit.result.cache

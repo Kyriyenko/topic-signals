@@ -1,0 +1,14 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use Symfony\Component\Console\Application;
+
+$container = require dirname(__DIR__) . '/bootstrap/app.php';
+
+$application = new Application('topic-signals', '0.1.0');
+
+// Commands are registered here as they are implemented (step 3 onward).
+
+$application->run();
