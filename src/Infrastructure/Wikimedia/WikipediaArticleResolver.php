@@ -39,7 +39,15 @@ final class WikipediaArticleResolver implements ArticleResolverPort
     public function resolve(Topic $topic, Language $language): ArticleReference
     {
         $pivot = new Language(self::PIVOT_LANGUAGE);
-        $searchResults = $this->search($topic, $pivot);
+
+        // Two independent search modes: full-text (ranks by article body content)
+        // and title/prefix search (the same engine behind Wikipedia's own search
+        // box autocomplete). A topic can rank outside the top results of one mode
+        // while being the very first hit of the other.
+        $searchResults = $this->mergeUniqueByTitle(
+            $this->search($topic, $pivot),
+            $this->openSearch($topic, $pivot),
+        );
 
         if ($searchResults === []) {
             throw ArticleNotFoundException::forTopic($topic, $language);
@@ -149,6 +157,50 @@ final class WikipediaArticleResolver implements ArticleResolverPort
         ]);
 
         return $data['query']['search'] ?? [];
+    }
+
+    /**
+     * Title/prefix search — the same engine as Wikipedia's search-box
+     * autocomplete. Complements full-text search, which ranks by article
+     * body content and can bury (or miss) a topic that IS a title match.
+     *
+     * @return array<int, array{title: string}>
+     */
+    private function openSearch(Topic $topic, Language $language): array
+    {
+        $data = $this->request("https://{$language->code()}.wikipedia.org/w/api.php", [
+            'action' => 'opensearch',
+            'search' => $topic->label(),
+            'limit' => 6,
+            'namespace' => 0,
+            'format' => 'json',
+        ]);
+
+        $titles = $data[1] ?? [];
+
+        return array_map(static fn (string $title) => ['title' => $title], $titles);
+    }
+
+    /**
+     * @param array<int, array{title: string}> ...$resultSets
+     *
+     * @return array<int, array{title: string}>
+     */
+    private function mergeUniqueByTitle(array ...$resultSets): array
+    {
+        $seenTitles = [];
+        $merged = [];
+
+        foreach ($resultSets as $results) {
+            foreach ($results as $result) {
+                if (!isset($seenTitles[$result['title']])) {
+                    $seenTitles[$result['title']] = true;
+                    $merged[] = $result;
+                }
+            }
+        }
+
+        return $merged;
     }
 
     /** @return array{isDisambiguation: bool, wikidataId: ?string} */

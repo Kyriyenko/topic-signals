@@ -23,6 +23,7 @@ final class WikipediaArticleResolverTest extends TestCase
     {
         $resolver = $this->resolverWithResponses([
             $this->searchResponse([['title' => 'Astronomy']]),
+            $this->openSearchResponse([]),
             $this->pagePropsResponse(isDisambiguation: false, wikidataId: 'Q333'),
         ]);
 
@@ -36,6 +37,7 @@ final class WikipediaArticleResolverTest extends TestCase
     {
         $resolver = $this->resolverWithResponses([
             $this->searchResponse([['title' => 'Astronomy']]),
+            $this->openSearchResponse([]),
             $this->pagePropsResponse(isDisambiguation: false, wikidataId: 'Q333'),
             $this->sitelinksResponse('Q333', 'ukwiki', 'Астрономія'),
         ]);
@@ -49,6 +51,7 @@ final class WikipediaArticleResolverTest extends TestCase
     {
         $resolver = $this->resolverWithResponses([
             $this->searchResponse([['title' => 'Intermittent fasting']]),
+            $this->openSearchResponse([]),
             $this->pagePropsResponse(isDisambiguation: false, wikidataId: 'Q1666254'),
             $this->sitelinksResponse('Q1666254', 'plwiki', null),
         ]);
@@ -62,6 +65,7 @@ final class WikipediaArticleResolverTest extends TestCase
     {
         $resolver = $this->resolverWithResponses([
             $this->searchResponse([]),
+            $this->openSearchResponse([]),
         ]);
 
         $this->expectException(ArticleNotFoundException::class);
@@ -77,6 +81,7 @@ final class WikipediaArticleResolverTest extends TestCase
                 ['title' => 'Mercury (planet)'],
                 ['title' => 'Mercury (element)'],
             ]),
+            $this->openSearchResponse([]),
             $this->pagePropsResponse(isDisambiguation: true, wikidataId: null),
         ]);
 
@@ -95,6 +100,7 @@ final class WikipediaArticleResolverTest extends TestCase
                 ['title' => 'Shiba Inu (cryptocurrency)'],
                 ['title' => 'Applications of artificial intelligence'],
             ]),
+            $this->openSearchResponse([]),
         ]);
 
         $this->expectException(ArticleNotFoundException::class);
@@ -109,6 +115,7 @@ final class WikipediaArticleResolverTest extends TestCase
                 ['title' => 'Something unrelated about ferns'],
                 ['title' => 'Astronomy'],
             ]),
+            $this->openSearchResponse([]),
             $this->pagePropsResponse(isDisambiguation: false, wikidataId: 'Q333'),
         ]);
 
@@ -124,12 +131,31 @@ final class WikipediaArticleResolverTest extends TestCase
                 ['title' => 'English as a second or foreign language'],
                 ['title' => 'English-language learner'],
             ]),
+            $this->openSearchResponse([]),
             $this->pagePropsResponse(isDisambiguation: false, wikidataId: 'Q17081060'),
         ]);
 
         $article = $resolver->resolve(new Topic('English language learning'), new Language('en'));
 
         self::assertSame('English-language learner', $article->title());
+    }
+
+    public function test_finds_a_match_that_only_the_title_search_surfaces(): void
+    {
+        // Full-text search finds nothing relevant, but the title/prefix search
+        // (the autocomplete engine) finds the article directly by its title.
+        $resolver = $this->resolverWithResponses([
+            $this->searchResponse([
+                ['title' => 'Unrelated article one'],
+                ['title' => 'Unrelated article two'],
+            ]),
+            $this->openSearchResponse(['Quokka']),
+            $this->pagePropsResponse(isDisambiguation: false, wikidataId: 'Q222'),
+        ]);
+
+        $article = $resolver->resolve(new Topic('Quokka'), new Language('en'));
+
+        self::assertSame('Quokka', $article->title());
     }
 
     /** @param Response[] $responses */
@@ -147,6 +173,12 @@ final class WikipediaArticleResolverTest extends TestCase
     private function searchResponse(array $results): Response
     {
         return new Response(200, [], json_encode(['query' => ['search' => $results]]));
+    }
+
+    /** @param string[] $titles */
+    private function openSearchResponse(array $titles): Response
+    {
+        return new Response(200, [], json_encode(['', $titles, [], []]));
     }
 
     private function pagePropsResponse(bool $isDisambiguation, ?string $wikidataId): Response
