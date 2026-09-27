@@ -51,6 +51,9 @@ final class AssessTopicGrowth
             articleTitle: $article->title(),
             direction: $assessment->direction()->value,
             percentChange: $assessment->percentChange(),
+            confidenceIntervalLow: $assessment->confidenceIntervalLow(),
+            confidenceIntervalHigh: $assessment->confidenceIntervalHigh(),
+            method: $assessment->method()->value,
             confidence: $assessment->confidence()->value,
             confidenceReasons: $assessment->confidenceReasons(),
             dataPointsCount: $series->count(),
@@ -73,9 +76,14 @@ final class AssessTopicGrowth
                     title: sprintf('%s — growth assessment (%s)', $topic->label(), strtoupper($language->code())),
                     keyFindings: [
                         sprintf(
-                            'Interest is %s (%+.1f%% between the first and second half of the period).',
+                            'Interest is %s: %+.1f%% (90%% confidence interval: %+.1f%% to %+.1f%%), based on %s.',
                             $assessment->direction()->value,
                             $assessment->percentChange(),
+                            $assessment->confidenceIntervalLow(),
+                            $assessment->confidenceIntervalHigh(),
+                            $assessment->method()->value === 'year_over_year'
+                                ? 'a year-over-year comparison'
+                                : 'comparing the first and second half of the period',
                         ),
                         sprintf('Confidence in this trend: %s.', $assessment->confidence()->value),
                         ...$assessment->confidenceReasons(),

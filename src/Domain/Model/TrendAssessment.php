@@ -13,6 +13,9 @@ final readonly class TrendAssessment
     public function __construct(
         private TrendDirection $direction,
         private float $percentChange,
+        private float $confidenceIntervalLow,
+        private float $confidenceIntervalHigh,
+        private TrendMethod $method,
         private ConfidenceLevel $confidence,
         private array $confidenceReasons,
         private array $assumptions,
@@ -27,6 +30,21 @@ final readonly class TrendAssessment
     public function percentChange(): float
     {
         return $this->percentChange;
+    }
+
+    public function confidenceIntervalLow(): float
+    {
+        return $this->confidenceIntervalLow;
+    }
+
+    public function confidenceIntervalHigh(): float
+    {
+        return $this->confidenceIntervalHigh;
+    }
+
+    public function method(): TrendMethod
+    {
+        return $this->method;
     }
 
     public function confidence(): ConfidenceLevel

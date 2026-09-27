@@ -7,20 +7,23 @@ namespace TopicSignals\Domain\Service;
 use TopicSignals\Domain\Exception\EmptyPageviewSeriesException;
 use TopicSignals\Domain\Model\ConfidenceLevel;
 use TopicSignals\Domain\Model\PageviewSeries;
+use TopicSignals\Domain\Model\TrendMethod;
+use TopicSignals\Domain\Model\TrendStatistics;
 
 /**
- * Estimates how much a trend conclusion can be trusted, based on sample size,
- * volatility and how much of the series has non-zero data.
+ * Estimates how much a trend conclusion can be trusted: sample size, volatility,
+ * how much of the series has non-zero data, and how wide the bootstrap
+ * confidence interval turned out to be.
  */
 final class ConfidenceEvaluator
 {
-    private const int MIN_POINTS_FOR_HIGH = 12;
-    private const int MIN_POINTS_FOR_MEDIUM = 6;
+    private const int MIN_POINTS_FOR_ANY_TREND = 6;
     private const float HIGH_VOLATILITY_CV = 0.75;
     private const float LOW_COVERAGE_RATIO = 0.6;
+    private const float WIDE_INTERVAL_PERCENTAGE_POINTS = 150.0;
 
     /** @return array{level: ConfidenceLevel, reasons: string[]} */
-    public function evaluate(PageviewSeries $series): array
+    public function evaluate(PageviewSeries $series, TrendStatistics $stats): array
     {
         if ($series->isEmpty()) {
             throw EmptyPageviewSeriesException::forAssessment();
@@ -30,18 +33,14 @@ final class ConfidenceEvaluator
         $penalties = 0;
 
         $pointCount = $series->count();
-        if ($pointCount < self::MIN_POINTS_FOR_MEDIUM) {
+
+        if ($pointCount < self::MIN_POINTS_FOR_ANY_TREND) {
             $penalties += 2;
-            $reasons[] = sprintf(
-                'Only %d data points available; short series make the trend unreliable.',
-                $pointCount,
-            );
-        } elseif ($pointCount < self::MIN_POINTS_FOR_HIGH) {
+            $reasons[] = sprintf('Only %d data points available; too little history to trust any trend.', $pointCount);
+        } elseif ($stats->method() === TrendMethod::HALF_PERIOD) {
             $penalties += 1;
-            $reasons[] = sprintf(
-                'Only %d data points available; a longer history would increase confidence.',
-                $pointCount,
-            );
+            $reasons[] = 'Fewer than 24 months of data, so the estimate compares the first and second half of '
+                . 'the period instead of year-over-year, which is less robust to seasonal swings.';
         }
 
         $counts = $series->viewCounts();
@@ -67,6 +66,17 @@ final class ConfidenceEvaluator
             );
         }
 
+        $intervalWidth = abs($stats->confidenceIntervalHigh() - $stats->confidenceIntervalLow());
+
+        if ($intervalWidth > self::WIDE_INTERVAL_PERCENTAGE_POINTS) {
+            $penalties += 1;
+            $reasons[] = sprintf(
+                'The 90%% confidence interval for growth is wide (%+.0f%% to %+.0f%%), so the exact size of the trend is uncertain.',
+                $stats->confidenceIntervalLow(),
+                $stats->confidenceIntervalHigh(),
+            );
+        }
+
         $level = match (true) {
             $penalties >= 2 => ConfidenceLevel::LOW,
             $penalties === 1 => ConfidenceLevel::MEDIUM,
@@ -74,7 +84,7 @@ final class ConfidenceEvaluator
         };
 
         if ($reasons === []) {
-            $reasons[] = 'Sufficient, stable, non-zero data across the requested period.';
+            $reasons[] = 'Sufficient, stable, non-zero data and a narrow confidence interval across the requested period.';
         }
 
         return ['level' => $level, 'reasons' => $reasons];

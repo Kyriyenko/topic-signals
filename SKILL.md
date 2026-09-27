@@ -59,8 +59,9 @@ Same options as above, except `--languages` takes a comma-separated list instead
 
 Key fields in every trend result:
 
-- `direction`: `growing` / `declining` / `stable`
-- `percent_change`: change between the first and second half of the lookback period
+- `direction`: `growing` / `declining` / `stable` — derived from the sign of the 90% confidence interval, not just the point estimate (see below)
+- `percent_change`: point-estimate growth. With ≥24 months of data this is year-over-year (last 12 months vs. the 12 before, which cancels seasonality); with less, it falls back to comparing the first vs. second half of the period — check `method` for which one applies
+- `confidence_interval_90`: `{low, high}` — a 90% bootstrap confidence interval around `percent_change`. **Quote this range, not just the point estimate**, e.g. "growing 20% (90% CI: 8% to 34%)". If the interval crosses zero, `direction` will already say `stable` — say the direction is inconclusive rather than picking a side
 - `confidence`: `high` / `medium` / `low` — **always mention this to the user**, never present a `low`-confidence trend as a firm conclusion
 - `confidence_reasons`: why the confidence level is what it is (short data history, high volatility, mostly-zero views, etc.) — surface these, they are the "how much can this be trusted" part of the task
 - `assumptions`: standard limitations of Wikipedia pageviews as a signal (proxy for interest, not purchase intent; spikes can be news-driven; language edition ≠ country/market) — **always include these in your answer to the user**, don't just report the numbers

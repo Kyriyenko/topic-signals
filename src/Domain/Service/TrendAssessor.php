@@ -25,13 +25,16 @@ final class TrendAssessor
 
     public function assess(PageviewSeries $series): TrendAssessment
     {
-        $percentChange = $this->trendCalculator->percentChange($series);
-        $direction = $this->trendCalculator->direction($percentChange);
-        $confidence = $this->confidenceEvaluator->evaluate($series);
+        $stats = $this->trendCalculator->calculate($series);
+        $direction = $this->trendCalculator->direction($stats);
+        $confidence = $this->confidenceEvaluator->evaluate($series, $stats);
 
         return new TrendAssessment(
             direction: $direction,
-            percentChange: $percentChange,
+            percentChange: $stats->percentChange(),
+            confidenceIntervalLow: $stats->confidenceIntervalLow(),
+            confidenceIntervalHigh: $stats->confidenceIntervalHigh(),
+            method: $stats->method(),
             confidence: $confidence['level'],
             confidenceReasons: $confidence['reasons'],
             assumptions: self::STANDARD_ASSUMPTIONS,
