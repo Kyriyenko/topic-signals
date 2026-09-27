@@ -4,11 +4,13 @@
 declare(strict_types=1);
 
 use Symfony\Component\Console\Application;
+use TopicSignals\Interface\Console\Command\AssessTopicGrowthCommand;
+use TopicSignals\Interface\Console\Command\CompareTopicAcrossLanguagesCommand;
 
 $container = require dirname(__DIR__) . '/bootstrap/app.php';
 
 $application = new Application('topic-signals', '0.1.0');
-
-// Commands are registered here as they are implemented (step 3 onward).
+$application->add($container->get(AssessTopicGrowthCommand::class));
+$application->add($container->get(CompareTopicAcrossLanguagesCommand::class));
 
 $application->run();
