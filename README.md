@@ -1,0 +1,53 @@
+# Wikipedia Topic Signals
+
+Agent Skill для аналізу переглядів Wikipedia — допомагає оцінити, чи росте інтерес до теми і в яких мовних розділах, перед тим як вкладати ресурси в курс/фічу/локалізацію.
+
+Це інструмент для AI-агента (Claude Code, Claude API тощо), викликається через shell. Опис для агента — у [`SKILL.md`](./SKILL.md).
+
+## Швидкий старт
+
+```bash
+git clone <repo-url> topic-signals
+cd topic-signals
+make setup
+```
+
+```bash
+make cli ARGS='topic:assess-growth --topic="Astronomy" --language=uk --months=24 --report'
+```
+
+Тести: `make test`. Інше — `make shell`, `make logs`, `make down`.
+
+## Команди
+
+- `topic:assess-growth` — тренд однієї теми в одному мовному розділі.
+- `topic:compare-languages` — та сама тема в кількох мовних розділах одразу.
+
+Обидві повертають JSON: напрямок тренду, `percent_change`, `confidence` з поясненням, `assumptions`, за бажанням шлях до PNG-графіка й PDF-звіту. Повний опис опцій і поведінки при помилках — у `SKILL.md`.
+
+## Архітектура
+
+Гексагональна:
+
+- `src/Domain` — value objects і доменна логіка (`TrendCalculator`, `ConfidenceEvaluator`), без залежностей від фреймворків.
+- `src/Application` — use case'и, DTO, порти (інтерфейси до зовнішнього світу).
+- `src/Infrastructure` — реалізації портів: Wikimedia API, Redis-кеш, matplotlib, dompdf.
+- `src/Interface/Console` — CLI-команди, точка входу для агента.
+
+## Резолв статті через Wikidata
+
+Пошук напряму в цільовій мові (наприклад, "Intermittent fasting" на pl.wikipedia) давав хибні збіги — знаходив статті, де просто згадувались ці слова, а не статтю по темі. Тому резолв іде через англійську Wikipedia, а в цільову мову переходить через Wikidata sitelinks.
+
+## Кеш
+
+Redis: резолв статті — 7 днів, дані переглядів — 24 години. Холодний виклик ~1100мс, кешований — 0.2мс.
+
+## Тестування
+
+23 unit/feature-тести (`make test`). Усі три сценарії із завдання прогнані вручну на реальному Wikimedia API. Skill перевірено на Claude Haiku 4.5 (окремий агент, бачив лише `SKILL.md`) — самостійно виконав команду і відповів на запит без підказок.
+
+## Що далі
+
+- Інші джерела сигналу (Google Trends, App Store search trends) — через новий порт, без зміни domain-логіки.
+- Точніші метрики тренду (лінійна регресія/сезонність) замість поточного порівняння двох половин періоду.
+- Паралельні запити для `compare-languages` при великій кількості мов.

@@ -1,4 +1,6 @@
-.PHONY: up down build install test cli shell logs
+.PHONY: setup up down build install test cli shell logs
+
+setup: build install
 
 up:
 	docker compose up -d
@@ -16,13 +18,10 @@ test:
 	docker compose run --rm app composer test
 
 cli:
-	docker compose run --rm app php bin/console $(filter-out $@,$(MAKECMDGOALS))
+	docker compose run --rm app php bin/console $(ARGS)
 
 shell:
-	docker compose exec app sh
+	docker compose run --rm app sh
 
 logs:
 	docker compose logs -f
-
-%:
-	@:
