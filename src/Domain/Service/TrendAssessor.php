@@ -35,6 +35,7 @@ final class TrendAssessor
             confidenceIntervalLow: $stats->confidenceIntervalLow(),
             confidenceIntervalHigh: $stats->confidenceIntervalHigh(),
             method: $stats->method(),
+            spikesRemoved: $stats->spikesRemoved(),
             confidence: $confidence['level'],
             confidenceReasons: $confidence['reasons'],
             assumptions: self::STANDARD_ASSUMPTIONS,

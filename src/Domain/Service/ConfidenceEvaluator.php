@@ -77,6 +77,13 @@ final class ConfidenceEvaluator
             );
         }
 
+        if ($stats->spikesRemoved() > 0) {
+            $reasons[] = sprintf(
+                '%d unusually high month(s) (likely a news-driven spike) were smoothed out before calculating the trend.',
+                $stats->spikesRemoved(),
+            );
+        }
+
         $level = match (true) {
             $penalties >= 2 => ConfidenceLevel::LOW,
             $penalties === 1 => ConfidenceLevel::MEDIUM,

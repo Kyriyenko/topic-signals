@@ -65,6 +65,7 @@ final class CompareTopicAcrossLanguages
                     confidenceIntervalLow: $assessment->confidenceIntervalLow(),
                     confidenceIntervalHigh: $assessment->confidenceIntervalHigh(),
                     method: $assessment->method()->value,
+                    spikesRemoved: $assessment->spikesRemoved(),
                     confidence: $assessment->confidence()->value,
                     confidenceReasons: $assessment->confidenceReasons(),
                     dataPointsCount: $series->count(),

@@ -16,6 +16,7 @@ final readonly class TrendAssessment
         private float $confidenceIntervalLow,
         private float $confidenceIntervalHigh,
         private TrendMethod $method,
+        private int $spikesRemoved,
         private ConfidenceLevel $confidence,
         private array $confidenceReasons,
         private array $assumptions,
@@ -45,6 +46,11 @@ final readonly class TrendAssessment
     public function method(): TrendMethod
     {
         return $this->method;
+    }
+
+    public function spikesRemoved(): int
+    {
+        return $this->spikesRemoved;
     }
 
     public function confidence(): ConfidenceLevel

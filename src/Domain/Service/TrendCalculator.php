@@ -25,17 +25,27 @@ final class TrendCalculator
     private const float PERCENTILE_HIGH = 0.95;
     private const int YEAR_OVER_YEAR_MIN_POINTS = 24;
 
+    public function __construct(private readonly Despiker $despiker = new Despiker())
+    {
+    }
+
     public function calculate(PageviewSeries $series): TrendStatistics
     {
         if ($series->isEmpty()) {
             throw EmptyPageviewSeriesException::forAssessment();
         }
 
-        $counts = $series->viewCounts();
+        $despiked = $this->despiker->despike($series->viewCounts());
+        $counts = $despiked['values'];
 
         return count($counts) >= self::YEAR_OVER_YEAR_MIN_POINTS
-            ? $this->fromPeriods(array_slice($counts, -24, 12), array_slice($counts, -12), TrendMethod::YEAR_OVER_YEAR)
-            : $this->halfPeriod($counts);
+            ? $this->fromPeriods(
+                array_slice($counts, -24, 12),
+                array_slice($counts, -12),
+                TrendMethod::YEAR_OVER_YEAR,
+                $despiked['spikesRemoved'],
+            )
+            : $this->halfPeriod($counts, $despiked['spikesRemoved']);
     }
 
     public function direction(TrendStatistics $stats): TrendDirection
@@ -48,18 +58,19 @@ final class TrendCalculator
     }
 
     /** @param int[] $counts */
-    private function halfPeriod(array $counts): TrendStatistics
+    private function halfPeriod(array $counts, int $spikesRemoved): TrendStatistics
     {
         $midpoint = (int) floor(count($counts) / 2);
 
         if ($midpoint === 0) {
-            return new TrendStatistics(0.0, 0.0, 0.0, TrendMethod::HALF_PERIOD);
+            return new TrendStatistics(0.0, 0.0, 0.0, TrendMethod::HALF_PERIOD, $spikesRemoved);
         }
 
         return $this->fromPeriods(
             array_slice($counts, 0, $midpoint),
             array_slice($counts, $midpoint),
             TrendMethod::HALF_PERIOD,
+            $spikesRemoved,
         );
     }
 
@@ -67,7 +78,7 @@ final class TrendCalculator
      * @param int[] $prior
      * @param int[] $recent
      */
-    private function fromPeriods(array $prior, array $recent, TrendMethod $method): TrendStatistics
+    private function fromPeriods(array $prior, array $recent, TrendMethod $method, int $spikesRemoved): TrendStatistics
     {
         $priorSum = array_sum($prior);
         $recentSum = array_sum($recent);
@@ -75,13 +86,13 @@ final class TrendCalculator
         if ($priorSum <= 0) {
             $pointEstimate = $recentSum > 0 ? 100.0 : 0.0;
 
-            return new TrendStatistics($pointEstimate, $pointEstimate, $pointEstimate, $method);
+            return new TrendStatistics($pointEstimate, $pointEstimate, $pointEstimate, $method, $spikesRemoved);
         }
 
         $pointEstimate = (($recentSum - $priorSum) / $priorSum) * 100.0;
         [$low, $high] = $this->bootstrapInterval(array_values($prior), array_values($recent));
 
-        return new TrendStatistics($pointEstimate, $low, $high, $method);
+        return new TrendStatistics($pointEstimate, $low, $high, $method, $spikesRemoved);
     }
 
     /**
