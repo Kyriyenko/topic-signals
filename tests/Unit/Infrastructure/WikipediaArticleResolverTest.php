@@ -88,6 +88,50 @@ final class WikipediaArticleResolverTest extends TestCase
         }
     }
 
+    public function test_rejects_a_top_hit_that_only_shares_an_incidental_word(): void
+    {
+        $resolver = $this->resolverWithResponses([
+            $this->searchResponse([
+                ['title' => 'Shiba Inu (cryptocurrency)'],
+                ['title' => 'Applications of artificial intelligence'],
+            ]),
+        ]);
+
+        $this->expectException(ArticleNotFoundException::class);
+
+        $resolver->resolve(new Topic('Artificial Inu'), new Language('en'));
+    }
+
+    public function test_skips_an_irrelevant_top_hit_and_picks_a_later_relevant_one(): void
+    {
+        $resolver = $this->resolverWithResponses([
+            $this->searchResponse([
+                ['title' => 'Something unrelated about ferns'],
+                ['title' => 'Astronomy'],
+            ]),
+            $this->pagePropsResponse(isDisambiguation: false, wikidataId: 'Q333'),
+        ]);
+
+        $article = $resolver->resolve(new Topic('Astronomy'), new Language('en'));
+
+        self::assertSame('Astronomy', $article->title());
+    }
+
+    public function test_matches_morphological_variants_via_stemming(): void
+    {
+        $resolver = $this->resolverWithResponses([
+            $this->searchResponse([
+                ['title' => 'English as a second or foreign language'],
+                ['title' => 'English-language learner'],
+            ]),
+            $this->pagePropsResponse(isDisambiguation: false, wikidataId: 'Q17081060'),
+        ]);
+
+        $article = $resolver->resolve(new Topic('English language learning'), new Language('en'));
+
+        self::assertSame('English-language learner', $article->title());
+    }
+
     /** @param Response[] $responses */
     private function resolverWithResponses(array $responses): WikipediaArticleResolver
     {
