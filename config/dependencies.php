@@ -12,6 +12,8 @@ use TopicSignals\Application\Port\ArticleResolverPort;
 use TopicSignals\Application\Port\ChartRendererPort;
 use TopicSignals\Application\Port\ReportRendererPort;
 use TopicSignals\Application\Port\WikipediaPageviewsPort;
+use TopicSignals\Infrastructure\Cache\CachedArticleResolver;
+use TopicSignals\Infrastructure\Cache\CachedWikipediaPageviews;
 use TopicSignals\Infrastructure\Chart\PythonChartRenderer;
 use TopicSignals\Infrastructure\Report\DompdfReportRenderer;
 use TopicSignals\Infrastructure\Wikimedia\WikipediaArticleResolver;
@@ -43,8 +45,21 @@ return [
         ]);
     },
 
-    ArticleResolverPort::class => \DI\autowire(WikipediaArticleResolver::class),
-    WikipediaPageviewsPort::class => \DI\autowire(WikipediaPageviews::class),
+    ArticleResolverPort::class => function ($container) {
+        return new CachedArticleResolver(
+            $container->make(WikipediaArticleResolver::class),
+            $container->get(RedisClient::class),
+            (int) ($_ENV['ARTICLE_CACHE_TTL_SECONDS'] ?? 604_800),
+        );
+    },
+
+    WikipediaPageviewsPort::class => function ($container) {
+        return new CachedWikipediaPageviews(
+            $container->make(WikipediaPageviews::class),
+            $container->get(RedisClient::class),
+            (int) ($_ENV['PAGEVIEWS_CACHE_TTL_SECONDS'] ?? 86_400),
+        );
+    },
 
     ChartRendererPort::class => function ($container) {
         return new PythonChartRenderer(
