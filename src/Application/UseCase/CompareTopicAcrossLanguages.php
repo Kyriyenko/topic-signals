@@ -11,6 +11,7 @@ use TopicSignals\Application\Dto\TrendResult;
 use TopicSignals\Application\Dto\UnresolvedLanguage;
 use TopicSignals\Application\Exception\AmbiguousArticleMatchException;
 use TopicSignals\Application\Exception\ApplicationException;
+use TopicSignals\Application\Exception\InsufficientDataException;
 use TopicSignals\Application\Port\ArticleResolverPort;
 use TopicSignals\Application\Port\ChartRendererPort;
 use TopicSignals\Application\Port\ReportRendererPort;
@@ -48,6 +49,11 @@ final class CompareTopicAcrossLanguages
             try {
                 $article = $this->articleResolver->resolve($topic, $language);
                 $series = $this->pageviews->fetchMonthlyViews($article, $range);
+
+                if ($series->isEmpty()) {
+                    throw InsufficientDataException::forArticle($article);
+                }
+
                 $assessment = $this->trendAssessor->assess($series);
 
                 $results[] = new TrendResult(

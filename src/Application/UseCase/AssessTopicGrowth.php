@@ -8,6 +8,7 @@ use TopicSignals\Application\Dto\AssessTopicGrowthRequest;
 use TopicSignals\Application\Dto\AssessTopicGrowthResponse;
 use TopicSignals\Application\Dto\ReportContent;
 use TopicSignals\Application\Dto\TrendResult;
+use TopicSignals\Application\Exception\InsufficientDataException;
 use TopicSignals\Application\Port\ArticleResolverPort;
 use TopicSignals\Application\Port\ChartRendererPort;
 use TopicSignals\Application\Port\ReportRendererPort;
@@ -37,6 +38,11 @@ final class AssessTopicGrowth
 
         $article = $this->articleResolver->resolve($topic, $language);
         $series = $this->pageviews->fetchMonthlyViews($article, $range);
+
+        if ($series->isEmpty()) {
+            throw InsufficientDataException::forArticle($article);
+        }
+
         $assessment = $this->trendAssessor->assess($series);
 
         $trendResult = new TrendResult(
