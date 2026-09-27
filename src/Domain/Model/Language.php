@@ -32,8 +32,4 @@ final readonly class Language
         return $this->code === $other->code;
     }
 
-    public function __toString(): string
-    {
-        return $this->code;
-    }
 }

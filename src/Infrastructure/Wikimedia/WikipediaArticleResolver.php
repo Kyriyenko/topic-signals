@@ -16,15 +16,9 @@ use TopicSignals\Domain\Model\Language;
 use TopicSignals\Domain\Model\Topic;
 
 /**
- * Resolves a free-text topic to a Wikipedia article.
- *
- * Full-text search is only reliable in one "pivot" language edition (English):
- * searching a topic written in English directly against, say, the Polish
- * search index matches articles that merely mention the English words, not
- * the article actually about that topic (verified against the real API).
- * So resolution always goes through English search first, then crosses over
- * to the requested language via the article's Wikidata sitelinks, which is
- * the same mechanism Wikipedia's own language switcher uses.
+ * Resolves a topic via English search, then crosses to the target language
+ * via Wikidata sitelinks — searching non-English editions directly matches
+ * articles that merely mention the English words, not the right topic.
  */
 final class WikipediaArticleResolver implements ArticleResolverPort
 {
@@ -73,7 +67,7 @@ final class WikipediaArticleResolver implements ArticleResolverPort
             throw ArticleNotFoundException::forTopic($topic, $language);
         }
 
-        return new ArticleReference($language, $localTitle, matchConfidence: null);
+        return new ArticleReference($language, $localTitle);
     }
 
     /** @return array<int, array{title: string}> */

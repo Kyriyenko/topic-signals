@@ -13,6 +13,7 @@ use TopicSignals\Application\Port\ArticleResolverPort;
 use TopicSignals\Application\Port\ChartRendererPort;
 use TopicSignals\Application\Port\ReportRendererPort;
 use TopicSignals\Application\Port\WikipediaPageviewsPort;
+use TopicSignals\Application\Support\Slug;
 use TopicSignals\Domain\Model\DateRange;
 use TopicSignals\Domain\Model\Language;
 use TopicSignals\Domain\Model\Topic;
@@ -61,7 +62,7 @@ final class AssessTopicGrowth
             $chartPath = $this->chartRenderer->renderLineChart(
                 title: sprintf('%s — %s Wikipedia', $topic->label(), strtoupper($language->code())),
                 seriesByLabel: [$language->code() => $series],
-                outputFileName: $this->safeFileName($topic->label(), $language->code()) . '.png',
+                outputFileName: Slug::make($topic->label(), $language->code()) . '.png',
             );
         }
 
@@ -86,7 +87,7 @@ final class AssessTopicGrowth
                     ],
                     chartImagePath: $chartPath,
                 ),
-                outputFileName: $this->safeFileName($topic->label(), $language->code()) . '.pdf',
+                outputFileName: Slug::make($topic->label(), $language->code()) . '.pdf',
             );
         }
 
@@ -97,13 +98,5 @@ final class AssessTopicGrowth
             chartPath: $chartPath,
             reportPath: $reportPath,
         );
-    }
-
-    private function safeFileName(string ...$parts): string
-    {
-        $slug = strtolower(implode('-', $parts));
-        $slug = preg_replace('/[^a-z0-9]+/', '-', $slug) ?? 'report';
-
-        return trim($slug, '-');
     }
 }

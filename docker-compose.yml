@@ -13,6 +13,7 @@ services:
       - REPORT_OUTPUT_DIR=/var/www/topic-signals/var/reports
       - CHART_PYTHON_BIN=/opt/chart-venv/bin/python
       - CHART_SCRIPT_PATH=/var/www/topic-signals/docker/chart/render.py
+      - WIKIMEDIA_USER_AGENT=topic-signals-skill/1.0 (https://github.com/Kyriyenko/topic-signals)
     depends_on:
       - redis
     networks:

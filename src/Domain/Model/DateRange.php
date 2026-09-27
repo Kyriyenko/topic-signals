@@ -35,9 +35,4 @@ final readonly class DateRange
     {
         return $this->end;
     }
-
-    public function spanInDays(): int
-    {
-        return (int) $this->start->diff($this->end)->days;
-    }
 }

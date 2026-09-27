@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         python3-pip \
         python3-venv \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j"$(nproc)" gd zip pcntl \
+    && docker-php-ext-install -j"$(nproc)" gd zip \
     && rm -rf /var/lib/apt/lists/*
 
 RUN python3 -m venv /opt/chart-venv \

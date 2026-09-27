@@ -4,10 +4,7 @@ declare(strict_types=1);
 
 namespace TopicSignals\Domain\Model;
 
-/**
- * @implements \IteratorAggregate<int, PageviewPoint>
- */
-final readonly class PageviewSeries implements \IteratorAggregate, \Countable
+final readonly class PageviewSeries
 {
     /** @var PageviewPoint[] */
     private array $points;
@@ -52,19 +49,9 @@ final readonly class PageviewSeries implements \IteratorAggregate, \Countable
         return array_sum(array_map(static fn (PageviewPoint $p) => $p->views(), $this->points));
     }
 
-    public function averageViews(): float
-    {
-        return $this->isEmpty() ? 0.0 : $this->totalViews() / $this->count();
-    }
-
     /** @return int[] */
     public function viewCounts(): array
     {
         return array_map(static fn (PageviewPoint $p) => $p->views(), $this->points);
-    }
-
-    public function getIterator(): \ArrayIterator
-    {
-        return new \ArrayIterator($this->points);
     }
 }

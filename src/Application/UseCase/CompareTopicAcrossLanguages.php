@@ -16,6 +16,7 @@ use TopicSignals\Application\Port\ArticleResolverPort;
 use TopicSignals\Application\Port\ChartRendererPort;
 use TopicSignals\Application\Port\ReportRendererPort;
 use TopicSignals\Application\Port\WikipediaPageviewsPort;
+use TopicSignals\Application\Support\Slug;
 use TopicSignals\Domain\Model\DateRange;
 use TopicSignals\Domain\Model\Language;
 use TopicSignals\Domain\Model\Topic;
@@ -85,7 +86,7 @@ final class CompareTopicAcrossLanguages
             $chartPath = $this->chartRenderer->renderLineChart(
                 title: sprintf('%s — interest by language edition', $topic->label()),
                 seriesByLabel: $seriesByLabel,
-                outputFileName: $this->safeFileName($topic->label()) . '-compare.png',
+                outputFileName: Slug::make($topic->label()) . '-compare.png',
             );
         }
 
@@ -111,7 +112,7 @@ final class CompareTopicAcrossLanguages
                     ],
                     chartImagePath: $chartPath,
                 ),
-                outputFileName: $this->safeFileName($topic->label()) . '-compare.pdf',
+                outputFileName: Slug::make($topic->label()) . '-compare.pdf',
             );
         }
 
@@ -123,13 +124,5 @@ final class CompareTopicAcrossLanguages
             chartPath: $chartPath,
             reportPath: $reportPath,
         );
-    }
-
-    private function safeFileName(string ...$parts): string
-    {
-        $slug = strtolower(implode('-', $parts));
-        $slug = preg_replace('/[^a-z0-9]+/', '-', $slug) ?? 'report';
-
-        return trim($slug, '-');
     }
 }

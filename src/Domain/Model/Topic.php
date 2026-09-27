@@ -31,8 +31,4 @@ final readonly class Topic
         return $this->label;
     }
 
-    public function __toString(): string
-    {
-        return $this->label;
-    }
 }
